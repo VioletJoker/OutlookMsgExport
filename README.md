@@ -1,11 +1,11 @@
 # OutlookMsgExport
 VBA code to export selected folders in outlook to user selected path on local filesystem or cloud data store
 
-Open Outlook
-Enable developer menu
-select Module 1 in navigaton pane
-Paste code into the window
-Click save
+1. Open Outlook;
+2. Enable developer menu;
+3. select Module 1 in navigaton pane;
+4. Paste code into the window;
+5. Click save;
 
 Execute the code using the run button OR execute as Macro within outlool
 
