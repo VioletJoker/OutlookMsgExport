@@ -1,0 +1,203 @@
+Option Explicit
+
+' >> Export email from outlook and save on user defined path on local machine <<
+' >> 23rd January 2021 <<
+
+
+Sub MailExportToLocalStorage()
+
+Dim v_ItemLoop As Long
+Dim v_WriteLoop As Long
+Dim v_FolderName As Long
+Dim str_MailSubject As String
+Dim str_Sender As String
+Dim str_FileName As String
+Dim str_DateReceived As String
+Dim str_OutputPath As String
+Dim str_FolderName As String
+Dim str_FolderNamePath As String
+Dim str_OutputFolder As String
+'Dim str_UserPrompt As String
+'Dim str_Title As String
+Dim my_NameSpace As NameSpace
+Dim my_OutlookApp As Outlook.Application
+Dim SubFolder As MAPIFolder
+Dim my_EmailItem As MailItem
+Dim my_FileSystemObject As Object
+Dim my_ChosenFolder As Object
+Dim Folder As New Collection
+Dim EntryID As New Collection
+Dim StoreID As New Collection
+Dim str_MailTo As String
+
+Set my_FileSystemObject = CreateObject("Scripting.FileSystemObject")
+Set my_OutlookApp = Outlook.Application
+Set my_NameSpace = my_OutlookApp.GetNamespace("MAPI")
+Set my_ChosenFolder = my_NameSpace.PickFolder
+If my_ChosenFolder Is Nothing Then
+GoTo ExitSub:
+End If
+
+
+str_OutputPath = BrowseForFolder
+If str_OutputPath = "" Then
+GoTo ExitSub:
+End If
+If Not Right(str_OutputPath, 1) = "\" Then
+str_OutputPath = str_OutputPath & "\"
+End If
+
+Call GetFolder(Folder, EntryID, StoreID, my_ChosenFolder)
+
+For v_ItemLoop = 1 To Folder.Count
+str_FolderName = StripIllegalChar(Folder(v_ItemLoop))
+v_FolderName = InStr(3, str_FolderName, "\") + 1
+str_FolderName = Mid(str_FolderName, v_FolderName, 256)
+str_FolderNamePath = str_OutputPath & str_FolderName & "\"
+str_OutputFolder = Left(str_FolderNamePath, Len(str_FolderNamePath) - 1) & "\"
+If Not my_FileSystemObject.FolderExists(str_FolderNamePath) Then
+my_FileSystemObject.CreateFolder (str_FolderNamePath)
+End If
+
+Set SubFolder = my_OutlookApp.Session.GetFolderFromID(EntryID(v_ItemLoop), StoreID(v_ItemLoop))
+On Error Resume Next
+For v_WriteLoop = 1 To SubFolder.Items.Count
+Set my_EmailItem = SubFolder.Items(v_WriteLoop)
+str_DateReceived = ArrangedDate(my_EmailItem.ReceivedTime)
+str_MailTo = my_EmailItem.SenderEmailAddress
+str_MailSubject = my_EmailItem.Subject
+str_Sender = StripIllegalChar(str_MailSubject)
+str_FileName = str_OutputFolder & str_MailTo & " - " & str_Sender & " - " & str_DateReceived & ".msg"
+str_FileName = Left(str_FileName, 256)
+my_EmailItem.SaveAs str_FileName, 3
+Next v_WriteLoop
+On Error GoTo 0
+Next v_ItemLoop
+
+ExitSub:
+
+End Sub
+
+Function StripIllegalChar(StrInput)
+
+Dim RegX As Object
+
+Set RegX = CreateObject("vbscript.regexp")
+
+RegX.Pattern = "[\" & Chr(34) & "\!\@\#\$\%\^\&\*\(\)\=\+\|\[\]\{\}\`\'\;\:\<\>\?\/\,]"
+RegX.IgnoreCase = True
+RegX.Global = True
+
+StripIllegalChar = RegX.Replace(StrInput, "")
+
+ExitFunction:
+
+Set RegX = Nothing
+
+End Function
+
+
+Function ArrangedDate(str_DateInput)
+
+Dim str_FullDate As String
+Dim str_FullTime As String
+Dim str_AMPM As String
+Dim str_Time As String
+Dim str_Year As String
+Dim str_MonthDay As String
+Dim str_Month As String
+Dim str_Day As String
+Dim str_Date As String
+Dim str_DateTimeGroup As String
+Dim RegX As Object
+
+Set RegX = CreateObject("vbscript.regexp")
+
+If Not Left(str_DateInput, 2) = "10" And _
+Not Left(str_DateInput, 2) = "11" And _
+Not Left(str_DateInput, 2) = "12" Then
+str_DateInput = "" & str_DateInput
+End If
+
+str_FullDate = Left(str_DateInput, 10)
+
+If Right(str_FullDate, 1) = " " Then
+str_FullDate = Left(str_DateInput, 9)
+End If
+
+
+str_FullTime = Replace(str_DateInput, str_FullDate & " ", "")
+
+If Len(str_FullTime) = 10 Then
+str_FullTime = "" & str_FullTime
+End If
+
+
+str_Time = Left(str_FullTime, 6)
+str_Year = Right(str_FullDate, 4)
+str_MonthDay = Replace(str_FullDate, "/" & str_Year, "")
+str_Day = Left(str_MonthDay, 2)
+str_Month = Right(str_MonthDay, Len(str_MonthDay) - 3)
+If Len(str_Day) = 1 Then
+str_Day = "0" & str_Day
+End If
+str_Date = str_Year & "/" & str_Month & "/" & str_Day
+'str_Date = str_Year & str_Month & str_Day
+str_DateTimeGroup = str_Date & "-" & str_Time
+RegX.Pattern = "[\:\/\ ]"
+RegX.IgnoreCase = True
+RegX.Global = True
+
+ArrangedDate = RegX.Replace(str_DateTimeGroup, "")
+
+ExitFunction:
+
+Set RegX = Nothing
+
+End Function
+
+Sub GetFolder(Folder As Collection, EntryID As Collection, StoreID As Collection, Fld As MAPIFolder)
+
+Dim SubFolder As MAPIFolder
+
+Folder.Add Fld.FolderPath
+EntryID.Add Fld.EntryID
+StoreID.Add Fld.StoreID
+For Each SubFolder In Fld.Folders
+GetFolder Folder, EntryID, StoreID, SubFolder
+Next SubFolder
+
+ExitSub:
+Set SubFolder = Nothing
+
+End Sub
+
+
+Function BrowseForFolder(Optional OpenAt As String) As String
+
+Dim ShellApp As Object
+
+Set ShellApp = CreateObject("Shell.Application"). _
+BrowseForFolder(0, "Select folder to save mail items", 0, OpenAt)
+
+On Error Resume Next
+BrowseForFolder = ShellApp.self.Path
+On Error GoTo 0
+
+Select Case Mid(BrowseForFolder, 2, 1)
+Case Is = ":"
+If Left(BrowseForFolder, 1) = ":" Then
+BrowseForFolder = ""
+End If
+Case Is = "\"
+If Not Left(BrowseForFolder, 1) = "\" Then
+BrowseForFolder = ""
+End If
+Case Else
+BrowseForFolder = ""
+End Select
+
+ExitFunction:
+
+Set ShellApp = Nothing
+End Function
