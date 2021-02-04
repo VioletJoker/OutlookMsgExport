@@ -14,3 +14,8 @@ When prompted, select the mail folder to export, or select the mailbox name to e
 Select a file path on your local filesystem
 The entire folder structure of your mailbox will be preserverd on the selected path if you choose the mailbox name option above, the folder name and its sub-structure will be writen to the selcected path if only a single mail folder is selected in the step above.
 
+EMails reamin in their source folders - if you make an error, simply navigate to the file path and delete the messages or folder, and repeat the process.
+
+mail output format is;
+
+Senders email address - email subject line - Date (YYYYMMDD) time (HHMM)
