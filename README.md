@@ -19,3 +19,6 @@ EMails reamin in their source folders - if you make an error, simply navigate to
 mail output format is;
 
 Senders email address - email subject line - Date (YYYYMMDD) time (HHMM)
+
+NOTES:  1. VBA IS NOT SUPPORTED IN OUTLOOK ON MACOS - BORROW A "GATES-BOX" AND SET UP OUTLOOK
+        2. ENSURE ALL EMAILS ARE TRANSFERRED FROM EXCHANGE TO OUTLOOK APPLICATION BEFORE RUNNING
